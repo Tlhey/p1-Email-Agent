@@ -1,0 +1,9 @@
+langchain
+langchain-openai
+langgraph
+python-dotenv
+typing-extensions
+pytest
+fastapi
+uvicorn
+sse-starlette
