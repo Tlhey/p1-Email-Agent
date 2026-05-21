@@ -1,11 +1,7 @@
 # Python
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
 .pytest_cache/
-.mypy_cache/
-.ruff_cache/
 
 # Virtual environment
 .venv/
@@ -14,10 +10,6 @@ env/
 
 # Environment variables
 .env
-
-# Database
-*.db
-db/
 
 # IDE
 .vscode/
