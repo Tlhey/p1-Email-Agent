@@ -47,7 +47,7 @@ def check_inbox() -> list[dict[str, Any]]:
         {
             "subject": "周末见个面？",
             "content": (
-                "嗨 虎哥，\n"
+                "嗨 Tlhey，\n"
                 "我下周会去城里，不知道我们有没有机会一起喝杯咖啡？\n\n"
                 "祝好，简"
             ),
@@ -57,7 +57,7 @@ def check_inbox() -> list[dict[str, Any]]:
         {
             "subject": "周五会议",
             "content": (
-                "嗨 虎哥，\n"
+                "嗨 Tlhey，\n"
                 "非常抱歉，我周五的会议无法准时参加了，能不能重新安排个时间？\n\n"
                 "祝好，小李"
             ),

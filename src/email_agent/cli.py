@@ -78,18 +78,20 @@ def ask_human_decision() -> dict[str, Any]:
         return {"type": "approve"}
 
     if choice in {"reject", "r", "2"}:
-        reason = input("拒绝原因：").strip()
-        if not reason:
-            reason = "The human reviewer rejected this action."
+        reason = input("拒绝原因：").strip() or "未提供原因"
         return {
             "type": "reject",
-            "message": reason,
+            "message": (
+                f"[REJECTED] 该操作已被用户拒绝，邮件未发送。\n"
+                f"原因：{reason}\n"
+                f"请告知用户操作已被取消，不要重试。"
+            ),
         }
 
     print("无法识别输入，默认 reject。")
     return {
         "type": "reject",
-        "message": "The human reviewer rejected this action.",
+        "message": "[REJECTED] 该操作已被用户拒绝，邮件未发送。请告知用户操作已被取消，不要重试。",
     }
 
 

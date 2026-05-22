@@ -57,7 +57,7 @@ def dynamic_tool_call(
     return handler(request)
 
 
-@dynamic_prompt
+@dynamic_prompt # 每次模型调用前，都先执行这个函数
 def dynamic_prompt_func(request: ModelRequest) -> str:
     """
     Dynamically switch the system prompt based on authentication state.

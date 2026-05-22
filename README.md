@@ -21,23 +21,13 @@ A LangChain/LangGraph-based Email Agent prototype demonstrating dynamic tool rou
 - python-dotenv
 - FastAPI/SSE planned
 
-## Project Goal
-
-This project is an agent engineering demo that focuses on:
-
-1. State-driven agent behavior
-2. Runtime and middleware usage
-3. Safe tool execution
-4. Human approval for irreversible actions
-5. Interview-ready system design explanation
-
 ## Planned Roadmap
 
-- [ ] CLI demo
-- [ ] MiniMax model integration
-- [ ] Authentication tool
-- [ ] Inbox and send-email tools
-- [ ] Dynamic middleware
-- [ ] Human-in-the-loop approval
+- [√] CLI demo
+- [√] MiniMax model integration
+- [√] Authentication tool
+- [√] Inbox and send-email tools
+- [√] Dynamic middleware
+- [√] Human-in-the-loop approval
 - [ ] FastAPI + SSE backend
 - [ ] Simple web UI
