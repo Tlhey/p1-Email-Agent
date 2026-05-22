@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Agent</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #app {
+      width: 720px;
+      max-width: 100vw;
+      height: 92vh;
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 6px 32px rgba(0,0,0,0.12);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    header {
+      padding: 14px 20px;
+      background: #1a73e8;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    header h1 { font-size: 17px; font-weight: 600; flex: 1; }
+
+    #thread-display {
+      font-size: 12px;
+      opacity: 0.8;
+      font-family: monospace;
+      background: rgba(255,255,255,0.15);
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    #btn-new-thread {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      color: #fff;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    #btn-new-thread:hover { background: rgba(255,255,255,0.28); }
+
+    /* ── Messages ── */
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 20px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .bubble {
+      max-width: 75%;
+      padding: 10px 14px;
+      border-radius: 14px;
+      line-height: 1.6;
+      font-size: 14px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .bubble.user {
+      align-self: flex-end;
+      background: #1a73e8;
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+    .bubble.ai {
+      align-self: flex-start;
+      background: #f1f3f4;
+      color: #202124;
+      border-bottom-left-radius: 4px;
+    }
+    .bubble.ai.typing::after {
+      content: '▋';
+      animation: blink 0.7s step-end infinite;
+    }
+    .bubble.error {
+      align-self: flex-start;
+      background: #fce8e6;
+      color: #c5221f;
+      border-bottom-left-radius: 4px;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* ── Input area ── */
+    #input-area {
+      padding: 12px 16px;
+      border-top: 1px solid #e0e0e0;
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    #user-input {
+      flex: 1;
+      border: 1px solid #dadce0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: none;
+      height: 44px;
+      max-height: 120px;
+      outline: none;
+      transition: border-color 0.15s;
+      overflow-y: auto;
+    }
+    #user-input:focus { border-color: #1a73e8; }
+    #send-btn {
+      background: #1a73e8;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 0 22px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    #send-btn:hover:not(:disabled) { background: #1557b0; }
+    #send-btn:disabled { background: #bdc1c6; cursor: not-allowed; }
+
+    /* ── HITL Modal ── */
+    #overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+    #overlay.show { display: flex; }
+
+    #modal {
+      background: #fff;
+      border-radius: 14px;
+      padding: 28px;
+      width: 460px;
+      max-width: 92vw;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    #modal h2 {
+      font-size: 16px;
+      color: #b31412;
+      margin-bottom: 16px;
+    }
+
+    .detail-card {
+      background: #f8f9fa;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+    .detail-card .row { display: flex; gap: 8px; margin-bottom: 4px; }
+    .detail-card .label { color: #5f6368; font-weight: 500; min-width: 52px; flex-shrink: 0; }
+    .detail-card .value { color: #202124; word-break: break-all; }
+
+    #reject-reason {
+      width: 100%;
+      border: 1px solid #dadce0;
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: 13px;
+      font-family: inherit;
+      margin-bottom: 20px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    #reject-reason:focus { border-color: #1a73e8; }
+
+    .modal-btns { display: flex; gap: 10px; justify-content: flex-end; }
+    .modal-btns button {
+      padding: 9px 22px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: background 0.15s;
+    }
+    #btn-reject { background: #fff; color: #c5221f; border: 1.5px solid #c5221f !important; }
+    #btn-reject:hover { background: #fce8e6; }
+    #btn-approve { background: #1a73e8; color: #fff; }
+    #btn-approve:hover { background: #1557b0; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>📧 Email Agent</h1>
+    <span id="thread-display"></span>
+    <button id="btn-new-thread" title="开启新会话">新会话</button>
+  </header>
+
+  <div id="messages">
+    <div class="bubble ai">你好！请先提供邮箱和密码进行认证。<br>测试账号：huge@itcast.cn　密码：123</div>
+  </div>
+
+  <div id="input-area">
+    <textarea id="user-input" placeholder="输入消息…（Enter 发送，Shift+Enter 换行）"></textarea>
+    <button id="send-btn">发送</button>
+  </div>
+</div>
+
+<!-- HITL 审批弹窗 -->
+<div id="overlay">
+  <div id="modal">
+    <h2>✋ 需要您的确认</h2>
+    <div class="detail-card" id="detail-card"></div>
+    <input id="reject-reason" type="text" placeholder="拒绝原因（可选）">
+    <div class="modal-btns">
+      <button id="btn-reject">拒绝</button>
+      <button id="btn-approve">✓ 同意发送</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API = 'http://localhost:8000';
+  const THREAD_KEY = 'email_agent_thread_id';
+
+  // ── Thread ID: persist across page reloads ─────────────────────────────────
+  function loadThreadId() {
+    let id = localStorage.getItem(THREAD_KEY);
+    if (!id) {
+      id = 'thread-' + Math.random().toString(36).slice(2, 10);
+      localStorage.setItem(THREAD_KEY, id);
+    }
+    document.getElementById('thread-display').textContent = id;
+    return id;
+  }
+
+  function newThread() {
+    localStorage.removeItem(THREAD_KEY);
+    location.reload();
+  }
+
+  let currentThreadId = loadThreadId();
+
+  document.getElementById('btn-new-thread').onclick = newThread;
+
+  // ── <think> streaming filter ────────────────────────────────────────────────
+  // State machine: buffers tokens to detect <think>...</think> and suppress them.
+  const thinkFilter = {
+    active: false,
+    buf: '',
+    S: '<think>',   // 7 chars
+    E: '</think>',  // 8 chars
+
+    reset() {
+      this.active = false;
+      this.buf = '';
+    },
+
+    feed(chunk) {
+      this.buf += chunk;
+      let out = '';
+
+      while (true) {
+        if (!this.active) {
+          const i = this.buf.indexOf(this.S);
+          if (i === -1) {
+            // No opening tag. Emit all but last (S.len-1) chars as partial-tag guard.
+            const guard = this.S.length - 1;
+            if (this.buf.length > guard) {
+              out += this.buf.slice(0, -guard);
+              this.buf = this.buf.slice(-guard);
+            }
+            break;
+          }
+          out += this.buf.slice(0, i);       // emit text before <think>
+          this.buf = this.buf.slice(i + this.S.length);
+          this.active = true;
+        } else {
+          const i = this.buf.indexOf(this.E);
+          if (i === -1) {
+            // Still inside think block; discard, keep guard.
+            const guard = this.E.length - 1;
+            if (this.buf.length > guard) this.buf = this.buf.slice(-guard);
+            break;
+          }
+          this.buf = this.buf.slice(i + this.E.length); // skip </think>
+          this.active = false;
+        }
+      }
+      return out;
+    },
+
+    // Call on stream end to flush any buffered non-think text.
+    flush() {
+      if (this.active) return '';
+      const out = this.buf;
+      this.buf = '';
+      return out;
+    },
+  };
+
+  // ── DOM helpers ─────────────────────────────────────────────────────────────
+  const messagesEl = document.getElementById('messages');
+  const inputEl    = document.getElementById('user-input');
+  const sendBtn    = document.getElementById('send-btn');
+  const overlay    = document.getElementById('overlay');
+
+  let streaming = false;
+  let aiEl = null;
+
+  function addBubble(role, text = '') {
+    const el = document.createElement('div');
+    el.className = `bubble ${role}`;
+    el.textContent = text;
+    messagesEl.appendChild(el);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    return el;
+  }
+
+  function setLock(locked) {
+    streaming = locked;
+    sendBtn.disabled = locked;
+    inputEl.disabled = locked;
+  }
+
+  // ── SSE parser ──────────────────────────────────────────────────────────────
+  async function fetchSSE(url, body, onEvent) {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    let evt = 'message';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop();
+      for (const line of lines) {
+        if (line.startsWith('event: ')) {
+          evt = line.slice(7).trim();
+        } else if (line.startsWith('data: ')) {
+          try { onEvent(evt, JSON.parse(line.slice(6))); } catch {}
+          evt = 'message';
+        }
+      }
+    }
+  }
+
+  // ── Run one agent stream ────────────────────────────────────────────────────
+  async function runStream(url, body) {
+    aiEl = addBubble('ai', '');
+    aiEl.classList.add('typing');
+    thinkFilter.reset();
+
+    await fetchSSE(url, body, (event, data) => {
+      if (event === 'token') {
+        const visible = thinkFilter.feed(data.content);
+        if (visible) {
+          aiEl.textContent += visible;
+          messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+
+      } else if (event === 'interrupt') {
+        // Flush any buffered text before showing modal
+        const tail = thinkFilter.flush();
+        if (tail) aiEl.textContent += tail;
+        aiEl.classList.remove('typing');
+        showModal(data);
+
+      } else if (event === 'done') {
+        const tail = thinkFilter.flush();
+        if (tail) aiEl.textContent += tail;
+        aiEl.classList.remove('typing');
+        if (!aiEl.textContent.trim()) aiEl.remove();
+        setLock(false);
+
+      } else if (event === 'error') {
+        thinkFilter.reset();
+        aiEl.classList.remove('typing');
+        aiEl.className = 'bubble error';
+        aiEl.textContent = '⚠ ' + data.message;
+        setLock(false);
+      }
+    });
+  }
+
+  // ── Send message ────────────────────────────────────────────────────────────
+  async function sendMessage() {
+    const text = inputEl.value.trim();
+    if (!text || streaming) return;
+
+    inputEl.value = '';
+    inputEl.style.height = '44px';
+    addBubble('user', text);
+    setLock(true);
+
+    try {
+      await runStream(
+        `${API}/threads/${currentThreadId}/messages`,
+        { message: text },
+      );
+    } catch (e) {
+      const el = addBubble('ai', '连接失败：' + e.message);
+      el.className = 'bubble error';
+      setLock(false);
+    }
+  }
+
+  // ── HITL Modal ──────────────────────────────────────────────────────────────
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function showModal(interruptData) {
+    const card = document.getElementById('detail-card');
+    card.innerHTML = '';
+
+    try {
+      const item = Array.isArray(interruptData) ? interruptData[0] : interruptData;
+      const req  = (item?.value?.action_requests || [])[0];
+      if (req) {
+        const args = req.args || {};
+        [
+          ['操作',   req.name],
+          args.to      && ['收件人', args.to],
+          args.subject && ['主题',   args.subject],
+          args.body    && ['内容',   args.body],
+        ].filter(Boolean).forEach(([label, val]) => {
+          const row = document.createElement('div');
+          row.className = 'row';
+          row.innerHTML = `<span class="label">${label}</span><span class="value">${escHtml(val)}</span>`;
+          card.appendChild(row);
+        });
+      } else {
+        card.textContent = JSON.stringify(item?.value ?? interruptData, null, 2);
+      }
+    } catch {
+      card.textContent = '需要确认此操作';
+    }
+
+    document.getElementById('reject-reason').value = '';
+    overlay.classList.add('show');
+  }
+
+  async function submitDecision(type) {
+    overlay.classList.remove('show');
+    const reason = document.getElementById('reject-reason').value.trim();
+    const decision = type === 'approve'
+      ? { type: 'approve' }
+      : { type: 'reject', message: reason || '用户拒绝' };
+
+    try {
+      await runStream(
+        `${API}/threads/${currentThreadId}/resume`,
+        { decision },
+      );
+    } catch (e) {
+      const el = addBubble('ai', '连接失败：' + e.message);
+      el.className = 'bubble error';
+      setLock(false);
+    }
+  }
+
+  // ── Bindings ────────────────────────────────────────────────────────────────
+  document.getElementById('btn-approve').onclick = () => submitDecision('approve');
+  document.getElementById('btn-reject').onclick  = () => submitDecision('reject');
+  sendBtn.onclick = sendMessage;
+
+  inputEl.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  });
+  inputEl.addEventListener('input', () => {
+    inputEl.style.height = '44px';
+    inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+  });
+</script>
+</body>
+</html>

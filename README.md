@@ -2,6 +2,16 @@
 
 A LangChain/LangGraph-based Email Agent prototype demonstrating dynamic tool routing, authentication-aware state management, and human-in-the-loop approval for high-risk tool calls.
 
+# Run
+cli:
+PYTHONPATH=src python -m email_agent.cli
+backend:
+PYTHONPATH=src .venv/bin/uvicorn email_agent.web:app --port 8000 --reload
+http://localhost:8000/docs 
+fronntend:
+http://localhost:8000
+
+
 ## Features
 
 - Authentication-aware agent state

@@ -54,4 +54,6 @@ def create_model() -> ChatOpenAI:
         api_key=settings.minimax_api_key,
         base_url=settings.minimax_base_url,
         temperature=settings.temperature,
+        timeout=180,
+        max_retries=1,
     )
